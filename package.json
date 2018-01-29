@@ -1,0 +1,28 @@
+{
+  "name": "trial-amazon-cognito-identity-js",
+  "version": "1.0.0",
+  "description": "N/A",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.165.0",
+    "amazon-cognito-identity-js": "^1.28.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shoutakenaka/trial-amazon-cognito-identity-js.git"
+  },
+  "keywords": [
+    "cognito",
+    "aws"
+  ],
+  "author": "Shou Takenaka",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shoutakenaka/trial-amazon-cognito-identity-js/issues"
+  },
+  "homepage": "https://github.com/shoutakenaka/trial-amazon-cognito-identity-js#readme"
+}
