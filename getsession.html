@@ -1,0 +1,48 @@
+<html>
+    <head>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+        <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
+        <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+        <script>
+            function retrieveConfiguration() {
+                return $.ajax('/config.json').then((config) => {
+                    return JSON.parse(config);
+                });
+            }
+
+            function buildCognitoUserPool(config) {
+                var poolData = {
+                    UserPoolId : config.userPoolId,
+                    ClientId : config.clientId
+                };
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
+            }
+
+            $(function() {
+                retrieveConfiguration()
+                    .then(function(config) {
+                        var userPool = buildCognitoUserPool(config);
+                        var user = userPool.getCurrentUser();
+                        return user.getSession(function(error, session) {
+                            if (error) {
+                                console.error('Failed to get session.', error);
+                                $('#result').text(JSON.stringify(error));
+                                return;
+                            }
+                            console.log('Got session', session);
+                            $('#result').text(JSON.stringify(session));
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Error occurred.', error);
+                        $('#result').text(JSON.stringify(error));
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="result">
+        </div>
+    </body>
+</html>
