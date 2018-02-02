@@ -1,0 +1,76 @@
+<html>
+    <head>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+        <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
+        <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+        <script>
+            function retrieveConfiguration() {
+                return $.ajax('/config.json').then((config) => {
+                    return JSON.parse(config);
+                });
+            }
+
+            function buildCognitoUserPool(config) {
+                var poolData = {
+                    UserPoolId : config.userPoolId,
+                    ClientId : config.clientId
+                };
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
+            }
+
+            function buildCognitoUser(userPool) {
+                var username = $('#username').val();
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUser({
+                    Username : username,
+                    Pool : userPool
+                });
+            }
+
+            function buildAuthenticationDetails() {
+                var username = $('#username').val();
+                var password = $('#password').val();
+                return new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails({
+                    Username : username,
+                    Password : password,
+                });
+            }
+
+            function submit() {
+                retrieveConfiguration()
+                    .then(function(config) {
+                        var userPool = buildCognitoUserPool(config);
+                        var user = buildCognitoUser(userPool);
+                        var auth = buildAuthenticationDetails();
+                        user.authenticateUser(auth, {
+                            onSuccess: function (result) {
+                                console.log('Authenticated.', result);
+                                $('#result').text(JSON.stringify(result));
+                            },
+                            onFailure: function(error) {
+                                console.error('Failed to authenticate. Please refer console log for detail.', error);
+                                $('#result').text(JSON.stringify(error));
+                            }
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Unexpected error.', error);
+                        $('#result').text(JSON.stringify(error));
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div>
+            <label>Username: </label>
+            <input type="text" id="username" name="username">
+            <br/>
+            <label>Password: </label>
+            <input type="password" id="password" name="password">
+            <br/>
+            <button type="button" onclick="submit();">Login</button>
+        </div>
+        <div id="result">
+        </div>
+    </body>
+</html>
