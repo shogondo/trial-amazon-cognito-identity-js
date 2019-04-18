@@ -1,10 +1,15 @@
 <html>
     <head>
-        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
-        <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.js"></script>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.js"></script>
         <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
         <script src="/node_modules/jquery/dist/jquery.min.js"></script>
         <script>
+            let cognitoUser;
+            let beforeID;
+            let beforeAccess;
+            let refreshToken;
+
             function retrieveConfiguration() {
                 return $.ajax('/config.json').then((config) => {
                     return config;
@@ -16,12 +21,12 @@
                     UserPoolId : config.userPoolId,
                     ClientId : config.clientId
                 };
-                return new AmazonCognitoIdentity.CognitoUserPool(poolData);
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
             }
 
             function buildCognitoUser(userPool) {
                 var username = $('#username').val();
-                return new AmazonCognitoIdentity.CognitoUser({
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUser({
                     Username : username,
                     Pool : userPool
                 });
@@ -30,7 +35,7 @@
             function buildAuthenticationDetails() {
                 var username = $('#username').val();
                 var password = $('#password').val();
-                return new AmazonCognitoIdentity.AuthenticationDetails({
+                return new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails({
                     Username : username,
                     Password : password,
                 });
@@ -41,11 +46,16 @@
                     .then(function(config) {
                         var userPool = buildCognitoUserPool(config);
                         var user = buildCognitoUser(userPool);
+                        cognitoUser = user;
                         var auth = buildAuthenticationDetails();
                         user.authenticateUser(auth, {
                             onSuccess: function (result) {
                                 console.log('Authenticated.', result);
                                 $('#result').text(JSON.stringify(result));
+                                console.log('Before', result.getIdToken().getJwtToken());
+                                beforeID = result.getIdToken().getJwtToken();
+                                beforeAccess = result.getAccessToken().getJwtToken();
+                                refreshToken = result.getRefreshToken();
                             },
                             onFailure: function(error) {
                                 console.error('Failed to authenticate. Please refer console log for detail.', error);
@@ -63,6 +73,21 @@
                         $('#result').text(JSON.stringify(error));
                 });
             }
+
+            function refresh() {
+                cognitoUser.refreshSession(refreshToken, (err, res) => {
+                    if (err) {
+                        console.error(err);
+                        return;
+                    }
+                    let after = res.getIdToken().getJwtToken();
+                    let afterAccess = res.getAccessToken().getJwtToken();
+                    console.log(res);
+                    console.log('After', res.getIdToken().getJwtToken());
+                    console.log(beforeID === after);
+                    console.log(beforeAccess === afterAccess);
+                });
+            }
         </script>
     </head>
     <body>
@@ -75,6 +100,7 @@
             <br/>
             <button type="button" onclick="submit();">Login</button>
         </div>
+        <button type="button" onclick="refresh();">Refresh</button>
         <div id="result">
         </div>
     </body>

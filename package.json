@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "aws-sdk": "^2.165.0",
-    "amazon-cognito-identity-js": "^1.28.0"
+    "jquery": "^3.0.0",
+    "amazon-cognito-identity-js": "^3.0.0"
   },
   "devDependencies": {},
   "scripts": {

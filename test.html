@@ -1,0 +1,88 @@
+<html>
+    <head>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+        <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
+        <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+        <script>
+            function retrieveConfiguration() {
+                return $.ajax('/config.json').then((config) => {
+                    return config;
+                });
+            }
+            
+
+            function auth(config) {
+                AWS.config.region = 'ap-northeast-1';
+                const idToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImM2YWY3Y2FhMDg5NWZkMDFlNzc4ZGNlYWE3YTc5ODgzNDdkOGYyNWMifQ.eyJhenAiOiI5NDgyNDQxMjkzNjAtb3NocXBwb3E1OW81aGpxcTh2ajlpZ3BhOXZ1a2hwNHAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI5NDgyNDQxMjkzNjAtb3NocXBwb3E1OW81aGpxcTh2ajlpZ3BhOXZ1a2hwNHAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTc2OTY0NDA5OTUzMjM5MjUwODkiLCJlbWFpbCI6InNhc2FtaW5uQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoidmZpdFR6clR2NEpFYlA4cHg5b1VIZyIsImV4cCI6MTUzMjY3ODM0MSwiaXNzIjoiYWNjb3VudHMuZ29vZ2xlLmNvbSIsImlhdCI6MTUzMjY3NDc0MX0.RjVy04oHOnNAJYVPvjcvk_ljTcaPLEFGzGzxFfJY8rf15nTB724f4bMtTvyMxqlI-LacP5Dh1YtfoL2L6XobHbfItZvv8HtWshpxkZmor0vFfnkHtC1GcftcB-KHulq9Xz8jlbAgs1hspmIrjCoRRK_I7qClpQMI6Vc-Xe06865C4SPemyU_c5taqbR8wuudxC9a36CGrWPLApqByetQvgzVuooq-Rd9M5xtF8o4zRwAi3TopBm6ochKykKHwwinhJw2-arksS1bRgJdcg4lW8PUw7ixGQwVZ-k1F_46YGmGlBb-CnsFoUwt29QqWkcLg15HHMqQfCGUJY9yuKwbtg';
+                const cognitoIdentity = new AWS.CognitoIdentity();
+                const params = {
+                    IdentityId: 'ap-northeast-1:356b53b8-5567-4348-8968-7d2f6aa5520b',
+                    Logins: {
+                        'accounts.google.com': idToken
+                    }
+                };
+                AWS.config.credentials = new AWS.CognitoIdentityCredentials(params);
+                return Promise.resolve();
+
+                // return new Promise(function(resolve, reject) {
+                //     cognitoIdentity.getCredentialsForIdentity(params, function(error, result) {
+                //         if (error) {
+                //             console.error(error);
+                //             return reject(error);
+                //         }
+                //         console.log(result);
+// 
+                //         const auth = {
+                //             IdentityPoolId: config.identityPoolId,
+                //             Logins: {
+                //                 ['cognito-idp.ap-northeast-1.amazonaws.com/' + config.userPoolId]: result.idToken.jwtToken
+                //             }
+                //         };
+                //         AWS.config.credentials = new AWS.CognitoIdentityCredentials(result.Credentials);
+                //         resolve(result);
+                //     });
+                // });
+            }
+
+            function submit() {
+                retrieveConfiguration()
+                    .then(function(config) {
+                        return auth(config);
+                    })
+                    .then(function() {
+                        // const client = new AWS.S3();
+                        // const params = {
+                        //     Bucket: 'shoutak-tmp',
+                        //     Prefix: 'private/group1/'
+                        // };
+                        // console.log({ params });
+                        // client.listObjects(params, function(error, response) {
+                        const client = new AWS.RDS();
+                        client.describeDBClusters({}, function(error, response) {
+                            if (error) {
+                                console.error('Failed to list objects.', error);
+                                console.error(JSON.stringify(error));
+                                return;
+                            }
+                            console.log(response);
+                            console.log('Success.');
+                        });
+                    });
+            }
+        </script>
+    </head>
+    <body>
+        <div>
+            <label>Username: </label>
+            <input type="text" id="username" name="username" value="test1">
+            <br/>
+            <label>Password: </label>
+            <input type="password" id="password" name="password" value="Abab1212">
+            <br/>
+            <button type="button" onclick="submit();">Login</button>
+        </div>
+        <div id="result">
+        </div>
+    </body>
+</html>

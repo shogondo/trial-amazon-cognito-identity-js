@@ -1,6 +1,5 @@
 <html>
     <head>
-        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
         <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
         <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
         <script src="/node_modules/jquery/dist/jquery.min.js"></script>
@@ -21,10 +20,12 @@
 
             function buildCognitoUser(userPool) {
                 var username = $('#username').val();
-                return new AmazonCognitoIdentity.CognitoUser({
+                var user = new AmazonCognitoIdentity.CognitoUser({
                     Username : username,
                     Pool : userPool
                 });
+                user.setAuthenticationFlowType('USER_PASSWORD_AUTH');
+                return user;
             }
 
             function buildAuthenticationDetails() {

@@ -1,0 +1,144 @@
+<html>
+    <head>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
+        <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+        <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
+        <script src="/node_modules/jquery/dist/jquery.min.js"></script>
+        <script>
+            function retrieveConfiguration() {
+                return $.ajax('/config.json').then((config) => {
+                    return config;
+                });
+            }
+
+            function buildCognitoUserPool(config) {
+                var poolData = {
+                    UserPoolId : config.userPoolId,
+                    ClientId : config.clientId
+                };
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
+            }
+
+            function buildCognitoUser(userPool) {
+                var username = $('#username').val();
+                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUser({
+                    Username : username,
+                    Pool : userPool
+                });
+            }
+
+            function buildAuthenticationDetails() {
+                var username = $('#username').val();
+                var password = $('#password').val();
+                return new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails({
+                    Username : username,
+                    Password : password,
+                });
+            }
+
+            function getUnauthId(config) {
+                AWS.config.region = 'ap-northeast-1';
+                const cognitoIdentity = new AWS.CognitoIdentity();
+                const params = {
+                    IdentityPoolId: config.identityPoolId
+                };
+                return new Promise(function(resolve, reject) {
+                    cognitoIdentity.getId(params, function(error, result) {
+                        if (error) {
+                            console.error(error);
+                            return reject(error);
+                        }
+                        console.log(result);
+                        console.log("unauth id:", result.IdentityId);
+                        resolve(result);
+                    });
+                });
+            }
+
+            function submit() {
+                retrieveConfiguration()
+                    .then(function(config) {
+                        var userPool = buildCognitoUserPool(config);
+                        var user = buildCognitoUser(userPool);
+                        var auth = buildAuthenticationDetails();
+                        getUnauthId(config).then(function() {
+                            user.authenticateUser(auth, {
+                                onSuccess: function (result) {
+                                    // console.log('Authenticated.', result);
+                                    // $('#result').text(JSON.stringify(result));
+
+                                    const auth = {
+                                        IdentityPoolId: config.identityPoolId,
+                                        Logins: {
+                                            ['cognito-idp.ap-northeast-1.amazonaws.com/' + config.userPoolId]: result.idToken.jwtToken
+                                        }
+                                    };
+
+                                    AWS.config.region = 'ap-northeast-1';
+                                    const cognitoIdentity = new AWS.CognitoIdentity();
+                                    cognitoIdentity.getId(auth, function(error, result) {
+                                        if (error) {
+                                            console.error(error);
+                                            return;
+                                        }
+
+                                        const identityId = result.IdentityId;
+                                        console.log('auth id;', identityId);
+                                        AWS.config.credentials = new AWS.CognitoIdentityCredentials(auth);
+
+                                        var sts = new AWS.STS();
+                                        sts.assumeRole({ RoleArn: 'arn:aws:iam::714611940791:role/case1823305943-crossaccount', RoleSessionName: 'Cog' }, function(error, res) {
+                                            if (error) {
+                                                console.error('Failed to assume role.', error);
+                                                return;
+                                            }
+                                            console.log(res);
+                                            console.log('Success.');
+
+                                            res.Credentials;
+                                        });
+
+                                        // const client = new AWS.S3();
+                                        // const params = {
+                                        //     Bucket: 'case1871011253bucket',
+                                        //     Key: 'Dockerfile'
+                                        // };
+                                        // console.log({ params });
+                                        // client.getObject(params, function(error, response) {
+                                        //     if (error) {
+                                        //         console.error('Failed to list objects.', error);
+                                        //         return;
+                                        //     }
+                                        //     console.log(response);
+                                        //     console.log('Success.');
+                                        // });
+                                    });
+                                },
+                                onFailure: function(error) {
+                                    console.error('Failed to authenticate. Please refer console log for detail.', error);
+                                    $('#result').text(JSON.stringify(error));
+                                }
+                            });
+                        });
+                    })
+                    .catch(function(error) {
+                        console.error('Unexpected error.', error);
+                        $('#result').text(JSON.stringify(error));
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div>
+            <label>Username: </label>
+            <input type="text" id="username" name="username" value="test1">
+            <br/>
+            <label>Password: </label>
+            <input type="password" id="password" name="password" value="Abab1212">
+            <br/>
+            <button type="button" onclick="submit();">Login</button>
+        </div>
+        <div id="result">
+        </div>
+    </body>
+</html>
