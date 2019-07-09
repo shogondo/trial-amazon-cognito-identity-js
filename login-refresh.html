@@ -12,7 +12,7 @@
 
             function retrieveConfiguration() {
                 return $.ajax('/config.json').then((config) => {
-                    return config;
+                    return JSON.parse(config);
                 });
             }
 
@@ -21,12 +21,12 @@
                     UserPoolId : config.userPoolId,
                     ClientId : config.clientId
                 };
-                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
+                return new AmazonCognitoIdentity.CognitoUserPool(poolData);
             }
 
             function buildCognitoUser(userPool) {
                 var username = $('#username').val();
-                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUser({
+                return new AmazonCognitoIdentity.CognitoUser({
                     Username : username,
                     Pool : userPool
                 });
@@ -35,7 +35,7 @@
             function buildAuthenticationDetails() {
                 var username = $('#username').val();
                 var password = $('#password').val();
-                return new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails({
+                return new AmazonCognitoIdentity.AuthenticationDetails({
                     Username : username,
                     Password : password,
                 });
@@ -74,6 +74,18 @@
                 });
             }
 
+            function signout() {
+                cognitoUser.globalSignOut({
+                    onSuccess: (data) => {
+                        console.log('Signed out');
+                        console.log(data);
+                    },
+                    onFailure: (error) => {
+                        console.log(error);
+                    }
+                });
+            }
+
             function refresh() {
                 cognitoUser.refreshSession(refreshToken, (err, res) => {
                     if (err) {
@@ -100,6 +112,8 @@
             <br/>
             <button type="button" onclick="submit();">Login</button>
         </div>
+        <button type="button" onclick="signout();">Sign out</button>
+        <br>
         <button type="button" onclick="refresh();">Refresh</button>
         <div id="result">
         </div>

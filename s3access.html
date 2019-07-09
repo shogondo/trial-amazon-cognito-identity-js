@@ -1,13 +1,12 @@
 <html>
     <head>
-        <script src="/node_modules/amazon-cognito-identity-js/dist/aws-cognito-sdk.min.js"></script>
         <script src="/node_modules/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
         <script src="/node_modules/aws-sdk/dist/aws-sdk.js"></script>
         <script src="/node_modules/jquery/dist/jquery.min.js"></script>
         <script>
             function retrieveConfiguration() {
                 return $.ajax('/config.json').then((config) => {
-                    return config;
+                    return JSON.parse(config);
                 });
             }
 
@@ -16,21 +15,23 @@
                     UserPoolId : config.userPoolId,
                     ClientId : config.clientId
                 };
-                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUserPool(poolData);
+                return new AmazonCognitoIdentity.CognitoUserPool(poolData);
             }
 
             function buildCognitoUser(userPool) {
                 var username = $('#username').val();
-                return new AWSCognito.CognitoIdentityServiceProvider.CognitoUser({
+                let user = new AmazonCognitoIdentity.CognitoUser({
                     Username : username,
                     Pool : userPool
                 });
+                user.setAuthenticationFlowType('USER_PASSWORD_AUTH');
+                return user;
             }
 
             function buildAuthenticationDetails() {
                 var username = $('#username').val();
                 var password = $('#password').val();
-                return new AWSCognito.CognitoIdentityServiceProvider.AuthenticationDetails({
+                return new AmazonCognitoIdentity.AuthenticationDetails({
                     Username : username,
                     Password : password,
                 });
@@ -55,6 +56,41 @@
                 });
             }
 
+            function authOldUserPool() {
+                var username = $('#username').val();
+                var password = $('#password').val();
+
+                let poolData = {
+                    UserPoolId : 'ap-northeast-1_ucLQLGOBE',
+                    ClientId : '7hmia822rbn1nqs46kcti0hr52'
+                };
+                let userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+                let userData = {
+                    Username : username,
+                    Pool: userPool
+                };
+                let cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+                let authenticationData = {
+                    Username : username,
+                    Password : password
+                };
+                let authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+                return new Promise((resolve, reject) => {
+                    cognitoUser.authenticateUser(authenticationDetails, {
+                        onSuccess: (result) => {
+                            resolve(result);
+                        },
+                        onFailure: (error) => {
+                            console.error({ error });
+                            reject(error);
+                        }
+                    });    
+                });
+
+            }
+
             function submit() {
                 console.log('a');
                 retrieveConfiguration()
@@ -69,15 +105,48 @@
                                 // $('#result').text(JSON.stringify(result));
                                 console.log('a');
 
+    //                             authOldUserPool().then((oldAuth) => {
+    //                                 const auth = {
+    //                                     IdentityPoolId: config.identityPoolId,
+    //                                     IdentityId: 'ap-northeast-1:ae227063-7e6c-47c6-a7be-58361308b5b3',
+    //                                     Logins: {
+    //                                         ['cognito-idp.ap-northeast-1.amazonaws.com/' + config.userPoolId]: result.idToken.jwtToken,
+    //                                         'cognito-idp.ap-northeast-1.amazonaws.com/ap-northeast-1_ucLQLGOBE': oldAuth.idToken.jwtToken
+    //                                     }
+    //                                 };
+
+    // console.log('a');
+    //                                 AWS.config.region = 'ap-northeast-1';
+    //                                 AWS.config.credentials = new AWS.CognitoIdentityCredentials(auth);
+    //                                 const client = new AWS.S3();
+    //                                 const params = {
+    //                                     Bucket: 'shoutak-tmp',
+    //                                     // Key: 'cognito/ap-northeast-1:1f6154bc-84ca-4d90-bb16-07041d330014/Dockerfile'
+    //                                     Key: 'cognito/ap-northeast-1:98a62647-059e-4f32-9e6c-c97c1b227306/Dockerfile'
+    //                                 };
+    //                                 // ap-northeast-1:1f6154bc-84ca-4d90-bb16-07041d330014
+    //                                 // 'cognito/ap-northeast-1:1f6154bc-84ca-4d90-bb16-07041d330014/Dockerfile'
+    //                                 // 'cognito/ap-northeast-1:98a62647-059e-4f32-9e6c-c97c1b227306/Dockerfile'
+    //                                 console.log({ params });
+    //                                 client.getObject(params, function(error, response) {
+    //                                     console.log(AWS.config.credentials);
+    //                                     if (error) {
+    //                                         console.error('Failed to get object.', error);
+    //                                         return;
+    //                                     }
+    //                                     console.log(response);
+    //                                     console.log('Success.');
+    //                                 });
+
+    //                             });
+
+                                AWS.config.region = 'ap-northeast-1';
                                 const auth = {
                                     IdentityPoolId: config.identityPoolId,
                                     Logins: {
                                         ['cognito-idp.ap-northeast-1.amazonaws.com/' + config.userPoolId]: result.idToken.jwtToken
                                     }
                                 };
-
-console.log('a');
-                                AWS.config.region = 'ap-northeast-1';
                                 const cognitoIdentity = new AWS.CognitoIdentity();
                                 cognitoIdentity.getId(auth, function(error, result) {
                                     if (error) {
