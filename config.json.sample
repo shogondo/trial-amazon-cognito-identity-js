@@ -1,4 +1,5 @@
 {
     "clientId": "",
+    "identityPoolId": "",
     "userPoolId": ""
 }
